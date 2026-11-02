@@ -17,37 +17,37 @@
 // kecil, kanan lebih besar" tidak pernah ambigu.
 //
 // =============================================================================
-
+ 
 #include "student.h"
-
+ 
 #include <iomanip>
 #include <iostream>
 #include <string>
-
+ 
 using namespace std;
-
+ 
 // =============================================================================
 // SUDAH DISEDIAKAN — TIDAK DINILAI, TIDAK PERLU DIUBAH
 // =============================================================================
 void inorder(const Node* root) {
     if (root == nullptr) return;
-
+ 
     inorder(root->left);
     cout << root->data << ' ';
     inorder(root->right);
 }
-
+ 
 void clear(Node*& root) {
     if (root == nullptr) return;
-
+ 
     clear(root->left);
     clear(root->right);
-
+ 
     delete root;
     root = nullptr;
 }
 // =============================================================================
-
+ 
 // =============================================================================
 // SOAL 1a — insert                                                     20 poin
 // =============================================================================
@@ -80,11 +80,20 @@ void clear(Node*& root) {
 //     insert(root, 55);       // true  — 55 belum ada, masuk sebagai cabang
 //                             //         kiri milik 60
 // =============================================================================
-
+ 
 bool insert(Node*& root, int nilai) {
-    return false;
+    if (root == nullptr) {              // tempat kosong: milik node baru
+        root = new Node;
+        root->data = nilai;
+        root->left = nullptr;
+        root->right = nullptr;
+        return true;
+    }
+    if (nilai < root->data) return insert(root->left, nilai);
+    if (nilai > root->data) return insert(root->right, nilai);
+    return false;                       // duplikat ditolak
 }
-
+ 
 // =============================================================================
 // SOAL 1b — cari                                                       15 poin
 // =============================================================================
@@ -111,11 +120,15 @@ bool insert(Node*& root, int nilai) {
 //     cari(root, 25);      // nullptr — 25 tidak ada di tree
 //     cari(nullptr, 10);   // nullptr — tree-nya kosong
 // =============================================================================
-
+ 
 const Node* cari(const Node* root, int nilai) {
+    while (root != nullptr) {
+        if (nilai == root->data) return root;
+        root = (nilai < root->data) ? root->left : root->right;
+    }
     return nullptr;
 }
-
+ 
 // =============================================================================
 // SOAL 2a — minimum                                                    10 poin
 // =============================================================================
@@ -144,11 +157,13 @@ const Node* cari(const Node* root, int nilai) {
 //            ╲
 //             30
 // =============================================================================
-
+ 
 const Node* minimum(const Node* root) {
-    return nullptr;
+    if (root == nullptr) return nullptr;
+    while (root->left != nullptr) root = root->left;
+    return root;
 }
-
+ 
 // =============================================================================
 // SOAL 2b — hapus                                                      30 poin
 // =============================================================================
@@ -207,11 +222,31 @@ const Node* minimum(const Node* root) {
 //
 //     inorder sesudahnya:  20 30 40 60 70 80    (tetap terurut naik)
 // =============================================================================
-
+ 
 bool hapus(Node*& root, int nilai) {
-    return false;
+    if (root == nullptr) return false;              // nilai tidak ada
+    if (nilai < root->data) return hapus(root->left, nilai);
+    if (nilai > root->data) return hapus(root->right, nilai);
+ 
+    // Ketemu node target.
+    if (root->left == nullptr) {                    // 0 child atau hanya kanan
+        Node* target = root;
+        root = root->right;
+        delete target;
+        return true;
+    }
+    if (root->right == nullptr) {                   // hanya child kiri
+        Node* target = root;
+        root = root->left;
+        delete target;
+        return true;
+    }
+    // 2 child: ganti dengan inorder successor, lalu hapus successor lama.
+    int nilaiSuccessor = minimum(root->right)->data;
+    root->data = nilaiSuccessor;
+    return hapus(root->right, nilaiSuccessor);
 }
-
+ 
 // =============================================================================
 // SOAL 3 — termahalTerbeli                                              25 poin
 // =============================================================================
@@ -248,11 +283,20 @@ bool hapus(Node*& root, int nilai) {
 //     termahalTerbeli(nullptr, 100);     // nullptr
 //         Tokonya tidak punya barang sama sekali.
 // =============================================================================
-
+ 
 const Node* termahalTerbeli(const Node* root, int uang) {
-    return nullptr;
+    const Node* terbaik = nullptr;
+    while (root != nullptr) {
+        if (root->data <= uang) {       // terjangkau: simpan, cari yang lebih mahal di kanan
+            terbaik = root;
+            root = root->right;
+        } else {                        // kemahalan: jawaban hanya mungkin di kiri
+            root = root->left;
+        }
+    }
+    return terbaik;
 }
-
+ 
 // =============================================================================
 // MAIN() — program Anda sendiri. TIDAK dinilai, bebas diubah.
 // =============================================================================
@@ -269,23 +313,23 @@ const Node* termahalTerbeli(const Node* root, int uang) {
 // tanpa memberi masukan apa pun, jadi cin di sana akan membaca sampah — dan
 // nilai Anda berubah-ubah setiap kali dinilai, dari kode yang sama persis.
 // =============================================================================
-
+ 
 #ifndef ADA_MAIN_LAIN
-
+ 
 // -----------------------------------------------------------------------------
 // Pembantu tampilan di bawah ini hanya merapikan keluaran. Boleh Anda ubah atau
 // hapus.
 // -----------------------------------------------------------------------------
-
+ 
 // Menulis satu baris keterangan dengan lebar label yang seragam.
 static ostream& baris(const string& label) {
     return cout << "    " << left << setw(22) << label << ": ";
 }
-
+ 
 static const char* benarSalah(bool nilai) {
     return nilai ? "true" : "false";
 }
-
+ 
 // Menampilkan isi node yang dikembalikan sebuah fungsi, atau "(tidak ada)" bila
 // fungsinya mengembalikan nullptr.
 static void tampilkanNode(const string& label, const Node* n) {
@@ -293,31 +337,31 @@ static void tampilkanNode(const string& label, const Node* n) {
     if (n == nullptr) cout << "(tidak ada)\n";
     else              cout << n->data << "\n";
 }
-
+ 
 // Menampilkan seluruh isi tree memakai inorder() yang sudah disediakan.
 static void tampilkanIsi(const string& label, const Node* root) {
     baris(label);
     inorder(root);
     cout << "\n";
 }
-
+ 
 int main() {
     cout << "==========================================\n";
     cout << " Latihan — Binary Search Tree\n";
     cout << " (bagian ini tidak ikut dinilai)\n";
     cout << "==========================================\n";
-
+ 
     // -------------------------------------------------------------------------
     // Soal 1a — membangun tree dengan insert(), persis Kegiatan 5.1 pada modul.
     // -------------------------------------------------------------------------
     cout << "\n[1] Soal 1a — insert(): memasukkan 50, 30, 70, 20, 40, 60, 80\n";
-
+ 
     Node* root = nullptr;
     const int masuk[] = {50, 30, 70, 20, 40, 60, 80};
     for (int i = 0; i < 7; ++i) {
         insert(root, masuk[i]);
     }
-
+ 
     tampilkanIsi("inorder", root);
     cout << "\n";
     cout << "    Yang benar: 20 30 40 50 60 70 80\n";
@@ -328,7 +372,7 @@ int main() {
     cout << "           30    70\n";
     cout << "          /  \\   / \\\n";
     cout << "        20   40 60   80\n";
-
+ 
     // -------------------------------------------------------------------------
     // Soal 1a — nilai duplikat harus ditolak.
     // -------------------------------------------------------------------------
@@ -337,7 +381,7 @@ int main() {
     baris("insert 40 (sudah ada)") << benarSalah(insert(root, 40)) << "\n";
     tampilkanIsi("inorder", root);
     cout << "\n    Yang benar: true, false, lalu 20 30 40 50 55 60 70 80\n";
-
+ 
     // -------------------------------------------------------------------------
     // Soal 1b — pencarian.
     // -------------------------------------------------------------------------
@@ -347,7 +391,7 @@ int main() {
     tampilkanNode("cari 25 (tidak ada)", cari(root, 25));
     tampilkanNode("cari pada tree kosong", cari(nullptr, 10));
     cout << "\n    Yang benar: 60, 20, (tidak ada), (tidak ada)\n";
-
+ 
     // -------------------------------------------------------------------------
     // Soal 2a — nilai terkecil, pada seluruh tree dan pada subtree.
     // -------------------------------------------------------------------------
@@ -358,7 +402,7 @@ int main() {
     }
     tampilkanNode("minimum tree kosong", minimum(nullptr));
     cout << "\n    Yang benar: 20, 55, (tidak ada)\n";
-
+ 
     // -------------------------------------------------------------------------
     // Soal 3 — soal cerita. Dipakai sebelum tree diubah oleh hapus().
     // -------------------------------------------------------------------------
@@ -372,34 +416,34 @@ int main() {
     tampilkanNode("uang 99", termahalTerbeli(root, 99));
     tampilkanNode("uang 15 (kurang)", termahalTerbeli(root, 15));
     cout << "\n    Yang benar: 60, 30, 40, 80, (tidak ada)\n";
-
+ 
     // -------------------------------------------------------------------------
     // Soal 2b — ketiga keadaan penghapusan, satu per satu.
     // -------------------------------------------------------------------------
     cout << "\n[6] Soal 2b — hapus(), ketiga keadaannya\n";
-
+ 
     // Node 20 adalah daun: tidak punya cabang sama sekali.
     baris("hapus 20 (0 child)") << benarSalah(hapus(root, 20)) << "\n";
     tampilkanIsi("  inorder", root);
-
+ 
     // Node 60 sekarang hanya punya cabang kiri, yaitu 55.
     baris("hapus 60 (1 child)") << benarSalah(hapus(root, 60)) << "\n";
     tampilkanIsi("  inorder", root);
-
+ 
     // Node 50 adalah root dan punya dua cabang. Penggantinya nilai terkecil
     // pada cabang kanan, yaitu 55.
     baris("hapus 50 (2 child)") << benarSalah(hapus(root, 50)) << "\n";
     tampilkanIsi("  inorder", root);
-
+ 
     baris("hapus 25 (tidak ada)") << benarSalah(hapus(root, 25)) << "\n";
     tampilkanIsi("  inorder", root);
-
+ 
     cout << "\n    Yang benar, berurutan:\n";
     cout << "      true  -> 30 40 50 55 60 70 80\n";
     cout << "      true  -> 30 40 50 55 70 80\n";
     cout << "      true  -> 30 40 55 70 80\n";
     cout << "      false -> 30 40 55 70 80   (tidak berubah)\n";
-
+ 
     // -------------------------------------------------------------------------
     // Mau mencoba dengan angka yang Anda ketik sendiri? Hapus tanda // di
     // bawah ini, lalu jalankan lagi.
@@ -411,14 +455,15 @@ int main() {
     // cout << "inorder sekarang: ";
     // inorder(root);
     // cout << endl;
-
+ 
     cout << "\n==========================================\n";
     cout << " Selesai. Silakan ubah bagian ini untuk\n";
     cout << " mencoba percobaan Anda sendiri.\n";
     cout << "==========================================\n";
-
+ 
     // Seluruh node dibebaskan sebelum program berakhir.
     clear(root);
     return 0;
 }
 #endif
+ 
